@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class playerController : MonoBehaviour
 {
+    // Settings
     [Header("Movement Settings")]
     [SerializeField] private float speed = 3.0f;
     [SerializeField] private float sprintMultiplier = 2.0f;
