@@ -5,157 +5,220 @@ using UnityEngine;
 
 public class playerController : MonoBehaviour
 {
-    [Header("Movement Speeds")]
-    [SerializeField] private float walkSpeed = 3.0f;
+    [Header("Movement Settings")]
+    [SerializeField] private float speed = 3.0f;
     [SerializeField] private float sprintMultiplier = 2.0f;
-
-
-    [Header("Jump Parameters")]
-    [SerializeField] private float jumpForce = 5.0f;
-    [SerializeField] private float gravityMultiplier = 1.0f;
-    [SerializeField] private float airResistance = 0.02f;
+    [SerializeField] private float crouchMultiplier = 0.5f;  
     [SerializeField] private float groundFriction = 8.0f;
+    [SerializeField] private float downwardForce = 10f;
+    
+
+    [Header("Crouch Settings")]
+    [SerializeField] private float standHeight = 2.0f;
+    [SerializeField] private float crouchHeight = 1.0f;
+    [SerializeField] private float standCameraHeight = 1.5f;
+    [SerializeField] private float crouchCameraHeight = 1.0f;
+    [SerializeField] private bool isCrouched;
+
+
+    [Header("Jump Settings")]
+    [SerializeField] private float jumpForce = 5.0f;
+    [SerializeField] private float airControlMultiplier = 5.0f;
 
 
     [Header("Look Settings")]
     [SerializeField] private float mouseSensitivity = 2.0f;
     [SerializeField] private float upDownLookRange = 90.0f;
+    [SerializeField] private float verticalRotation;
+
 
     [Header ("References")]
-    [SerializeField] private CharacterController characterController;
+    [SerializeField] private Rigidbody rb; 
     [SerializeField] private Camera mainCamera;
     [SerializeField] private PlayerInputHandler playerInputHandler;
+    [SerializeField] private Transform playerSkin;
+    [SerializeField] private CapsuleCollider capsuleCollider;
 
 
-    private Vector3 currentMovement;
-    private Vector3 momentumDirection;
-    private Vector3 cachedWorldDirection;
-    private bool worldDirectionDirty = true;
-    private float verticalRotation;
-    private float momentumSpeed;
-
-    private float currentSpeed 
-    {
-        get
-        {
-            if (playerInputHandler.MovementInput.magnitude < 0.1f) return 0f;
-            return walkSpeed * (playerInputHandler.SprintTriggered ? sprintMultiplier : 1);
-        }
-    }
-
-    private Vector3 CalculateWorldDirection()
-    {
-        // Only recalculate if the cache is "dirty" (outdated)
-        if (worldDirectionDirty)
-        {
-            Vector3 inputDirection = new Vector3(playerInputHandler.MovementInput.x, 0f, playerInputHandler.MovementInput.y);
-            cachedWorldDirection = transform.TransformDirection(inputDirection).normalized;
-            worldDirectionDirty = false;
-        }
-        return cachedWorldDirection;
-    }   
-
-
-    // Start is called before the first frame update
+    // Runs once at the start
     void Start()
     {
+        rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true; // Keeps the player from tipping over
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+        // Set up the player's collider size and position
+        capsuleCollider = GetComponent<CapsuleCollider>();
+        capsuleCollider.height = standHeight;
+        capsuleCollider.center = Vector3.zero;
+
+        // Lock the mouse cursor so it doesn't wander off and hide it from view
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
 
-    // Update is called once per frame
+    // Called every frame
     void Update()
     {
-        worldDirectionDirty = true; // Mark the cache as dirty
-        HandleMovement();
         HandleRotation();
+    }
 
-        if (!characterController.isGrounded) 
+
+    // Physics updates happen here
+    void FixedUpdate()
+    {
+        HandleMovement(
+        playerInputHandler.MovementInput,
+        playerInputHandler.SprintTriggered,
+        playerInputHandler.CrouchTriggered);
+        HandleJumping(playerInputHandler.JumpTriggered);
+        HandleCrouching(playerInputHandler.CrouchTriggered);
+
+        // Smoothly move the camera up or down based on whether we're crouching
+        float targetCameraHeight = isCrouched ? crouchCameraHeight : standCameraHeight;
+        Vector3 cameraPos = mainCamera.transform.localPosition;
+        cameraPos.y = Mathf.Lerp(cameraPos.y, targetCameraHeight, Time.fixedDeltaTime * 10f);
+        mainCamera.transform.localPosition = cameraPos;
+    }
+
+
+    // Gizmo to help us see if we're touching the ground in the editor
+    private void OnDrawGizmos()
+    {
+        if (playerSkin == null) return;
+
+        Vector3 spherePosition = transform.position + Vector3.down * (capsuleCollider.height / 2f - 0.2f);
+        float sphereRadius = 0.25f;
+
+        // Green means grounded, red means not grounded
+        Gizmos.color = isGrounded() ? Color.green : Color.red;
+
+        // Draw the wireframe sphere in the scene view
+        Gizmos.DrawWireSphere(spherePosition, sphereRadius);
+    }
+
+
+    // Checks if the player is standing on the ground by casting a small sphere below them
+    private bool isGrounded()
+    {
+        float sphereRadius = 0.25f;
+        float groundOffset = standHeight / 2f - 0.2f;
+        Vector3 spherePosition = transform.position + Vector3.down * groundOffset;
+        int groundLayer = LayerMask.GetMask("Ground");
+
+        return Physics.CheckSphere(spherePosition, sphereRadius, groundLayer);
+    }
+
+
+    private void HandleJumping(bool jumpTriggered)
+    {
+        if (jumpTriggered && isGrounded())
         {
-            float airDecay = 1f - (airResistance * Time.deltaTime * 60f);
-            momentumSpeed *= airDecay;
-        }
-        else
-        {
-            momentumSpeed = Mathf.MoveTowards(momentumSpeed, currentSpeed, groundFriction * Time.deltaTime);
+            // Getting stuck on narrow gaps fix
+            if (!isCrouched && !CanStandUp()) return;
+
+            // Reset any downward or upward velocity before jumping
+            Vector3 velocity = rb.linearVelocity;
+            velocity.y = 0f;
+            rb.linearVelocity = velocity;
+
+            // Add an instant upward force to make the player jump
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
     }
 
 
-    private void HandleJumping()
+    // Checks if there's enough headroom for the player to stand up safely
+    private bool CanStandUp()
     {
-        if (characterController.isGrounded)
-        {
-            currentMovement.y = -0.5f;
+        float radius = capsuleCollider.radius * 0.9f;
+        Vector3 bottom = transform.position + Vector3.up * radius;
+        Vector3 top = transform.position + Vector3.up * (standHeight - radius);
+        int obstacleLayer = LayerMask.GetMask("Ground");
 
-            if (playerInputHandler.JumpTriggered)
+        // Returns true if no obstacles are blocking the space above the player
+        return !Physics.CheckCapsule(bottom, top, radius, obstacleLayer);
+    }
+
+
+    private void HandleCrouching(bool crouchTriggered)
+    {
+        // Decide if we should crouch based on input or if there's no space to stand
+        bool shouldCrouch = crouchTriggered || !CanStandUp();
+
+        // Smoothly adjust the player's collider size and position for crouching
+        float targetHeight = shouldCrouch ? crouchHeight : standHeight;
+        Vector3 targetCenter = shouldCrouch ? new Vector3(0, -0.5f, 0) : Vector3.zero;
+
+        capsuleCollider.height = targetHeight;
+        capsuleCollider.center = targetCenter;
+
+        isCrouched = shouldCrouch;
+    }
+
+
+    private void HandleMovement(Vector2 movementInput, bool sprintTriggered, bool crouchTriggered)
+    {
+        Vector3 inputDirection = new Vector3(movementInput.x, 0f, movementInput.y).normalized;
+        Vector3 moveDirection = playerSkin.TransformDirection(inputDirection);
+        float currentSpeed = speed;
+
+        // Adjust speed if sprinting or crouching
+        if (sprintTriggered) currentSpeed *= sprintMultiplier;
+        if (isCrouched) currentSpeed *= crouchMultiplier;
+
+        Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+
+        if (isGrounded())
+        {
+            // When on the ground, directly set horizontal velocity if there's input
+            if (inputDirection.magnitude > 0f)
             {
-                currentMovement.y = jumpForce;
-                // Capture momentum when jumping
-                Vector3 currentWorldDirection = CalculateWorldDirection();
-                if (currentWorldDirection.magnitude > 0.1f)
-                {
-                    momentumDirection = currentWorldDirection;
-                    momentumSpeed = currentSpeed;
-                }
+                Vector3 moveVelocity = moveDirection * currentSpeed;
+                rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
+            }
+            else
+            {
+                // If no input, apply friction to slow down smoothly
+                Vector3 frictionVelocity = horizontalVelocity * Mathf.Max(0f, 1f - groundFriction * Time.fixedDeltaTime);
+                rb.linearVelocity = new Vector3(frictionVelocity.x, rb.linearVelocity.y, frictionVelocity.z);
+            }
+            // If no input, keep current momentum going
+        }
+        else
+        {
+            // In the air, apply input as acceleration instead of direct velocity changes
+            if (inputDirection.magnitude > 0f)
+            {
+                Vector3 moveVelocity = moveDirection * currentSpeed;
+                Vector3 velocityChange = moveVelocity - horizontalVelocity;
+                rb.AddForce(velocityChange * airControlMultiplier, ForceMode.Acceleration);
             }
         }
-        else
-        {
-            currentMovement.y += Physics.gravity.y * gravityMultiplier * Time.deltaTime;
-        }
     }
-
-
-    private void HandleMovement()
-    {
-        Vector3 worldDirection = CalculateWorldDirection();
-        float speed = currentSpeed; // Cache current speed
-        
-        if (characterController.isGrounded)
-        {
-            currentMovement.x = worldDirection.x * speed;
-            currentMovement.z = worldDirection.z * speed;
-
-            if(worldDirection.magnitude > 0.1f)
-            {
-                momentumDirection = worldDirection;
-                momentumSpeed = speed;
-            }
-        }
-        else
-        {
-            currentMovement.x = momentumDirection.x * momentumSpeed;
-            currentMovement.z = momentumDirection.z * momentumSpeed;
-        }
-
-        HandleJumping();
-        characterController.Move(currentMovement * Time.deltaTime);
-    }
-
     
+    // Rotates the player horizontally based on input
     private void ApplyHorizontalRotation(float rotationAmount)
     {
-        transform.Rotate(0, rotationAmount, 0);
+        rb.MoveRotation(rb.rotation * Quaternion.Euler(0f, rotationAmount, 0f));
     }
 
-
+    // Rotates the camera vertically so the player can look up and down
     private void ApplyVerticalRotation(float rotationAmount)
     {
         verticalRotation = Mathf.Clamp(verticalRotation - rotationAmount, -upDownLookRange, upDownLookRange);
         mainCamera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
     }
 
-
+    // Reads input and applies the appropriate rotations to player and camera
     private void HandleRotation()
     {
         float mouseXRotation = playerInputHandler.RotationInput.x * mouseSensitivity;
         float mouseYRotation = playerInputHandler.RotationInput.y * mouseSensitivity;
 
-
         ApplyHorizontalRotation(mouseXRotation);
         ApplyVerticalRotation(mouseYRotation);
-    }
-
+    }   
 }

@@ -19,18 +19,21 @@ public class PlayerInputHandler : MonoBehaviour
     [SerializeField] private string rotation = "Rotation";
     [SerializeField] private string jump = "Jump";
     [SerializeField] private string sprint = "Sprint";
+    [SerializeField] private string crouch = "Crouch";
 
 
     private InputAction movementAction;
     private InputAction rotationAction;
     private InputAction jumpAction;
     private InputAction sprintAction;
+    private InputAction crouchAction;
 
 
     public Vector2 MovementInput {  get; private set; }
     public Vector2 RotationInput {  get; private set; }
     public bool JumpTriggered {  get; private set; }
     public bool SprintTriggered {  get; private set; }
+    public bool CrouchTriggered { get; private set; }
 
 
     private void Awake()
@@ -42,6 +45,7 @@ public class PlayerInputHandler : MonoBehaviour
         rotationAction = mapReference.FindAction(rotation);
         jumpAction = mapReference.FindAction(jump);
         sprintAction = mapReference.FindAction(sprint);
+        crouchAction = mapReference.FindAction(crouch);
 
 
         SubscribeActionValuesToInputEvents();
@@ -64,6 +68,10 @@ public class PlayerInputHandler : MonoBehaviour
 
         sprintAction.performed += inputInfo => SprintTriggered = true;
         sprintAction.canceled += inputInfo => SprintTriggered = false;
+
+
+        crouchAction.performed += inputInfo => CrouchTriggered = true;
+        crouchAction.canceled += inputInfo => CrouchTriggered = false;
     }
 
 
