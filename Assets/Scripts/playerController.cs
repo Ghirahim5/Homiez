@@ -5,13 +5,11 @@ using UnityEngine;
 
 public class playerController : MonoBehaviour
 {
-    // Settings
+
     [Header("Movement Settings")]
-    [SerializeField] private float speed = 3.0f;
+    [SerializeField] private float speed = 4.0f;
     [SerializeField] private float sprintMultiplier = 2.0f;
     [SerializeField] private float crouchMultiplier = 0.5f;  
-    [SerializeField] private float groundFriction = 8.0f;
-    [SerializeField] private float downwardForce = 10f;
     
 
     [Header("Crouch Settings")]
@@ -25,6 +23,7 @@ public class playerController : MonoBehaviour
     [Header("Jump Settings")]
     [SerializeField] private float jumpForce = 5.0f;
     [SerializeField] private float airControlMultiplier = 5.0f;
+    private bool jumpButtonHeldLastFrame = false;
 
 
     [Header("Look Settings")]
@@ -112,22 +111,19 @@ public class playerController : MonoBehaviour
         return Physics.CheckSphere(spherePosition, sphereRadius, groundLayer);
     }
 
-
     private void HandleJumping(bool jumpTriggered)
     {
-        if (jumpTriggered && isGrounded())
+        if (jumpTriggered && !jumpButtonHeldLastFrame && isGrounded())
         {
-            // Getting stuck on narrow gaps fix
             if (!isCrouched && !CanStandUp()) return;
 
-            // Reset any downward or upward velocity before jumping
             Vector3 velocity = rb.linearVelocity;
             velocity.y = 0f;
             rb.linearVelocity = velocity;
 
-            // Add an instant upward force to make the player jump
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
+        jumpButtonHeldLastFrame = jumpTriggered;
     }
 
 
@@ -166,36 +162,34 @@ public class playerController : MonoBehaviour
         Vector3 moveDirection = playerSkin.TransformDirection(inputDirection);
         float currentSpeed = speed;
 
-        // Adjust speed if sprinting or crouching
         if (sprintTriggered) currentSpeed *= sprintMultiplier;
         if (isCrouched) currentSpeed *= crouchMultiplier;
 
-        Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-
-        if (isGrounded())
+        if (inputDirection.magnitude > 0f)
         {
-            // When on the ground, directly set horizontal velocity if there's input
-            if (inputDirection.magnitude > 0f)
+            Vector3 targetVelocity = moveDirection * currentSpeed;
+            Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+
+            if (isGrounded())
             {
-                Vector3 moveVelocity = moveDirection * currentSpeed;
-                rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
+                if (sprintTriggered)
+                {
+                    // Smooth acceleration for sprinting
+                    float sprintAcceleration = 5f;
+                    Vector3 newHorizontalVelocity = Vector3.Lerp(horizontalVelocity, targetVelocity, Time.fixedDeltaTime * sprintAcceleration);
+                    rb.linearVelocity = new Vector3(newHorizontalVelocity.x, rb.linearVelocity.y, newHorizontalVelocity.z);
+                }
+                else
+                {
+                    // Immediate walking speed
+                    rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+                }
             }
             else
             {
-                // If no input, apply friction to slow down smoothly
-                Vector3 frictionVelocity = horizontalVelocity * Mathf.Max(0f, 1f - groundFriction * Time.fixedDeltaTime);
-                rb.linearVelocity = new Vector3(frictionVelocity.x, rb.linearVelocity.y, frictionVelocity.z);
-            }
-            // If no input, keep current momentum going
-        }
-        else
-        {
-            // In the air, apply input as acceleration instead of direct velocity changes
-            if (inputDirection.magnitude > 0f)
-            {
-                Vector3 moveVelocity = moveDirection * currentSpeed;
-                Vector3 velocityChange = moveVelocity - horizontalVelocity;
-                rb.AddForce(velocityChange * airControlMultiplier, ForceMode.Acceleration);
+                // Air movement (lerp for control)
+                Vector3 newHorizontalVelocity = Vector3.Lerp(horizontalVelocity, targetVelocity, Time.fixedDeltaTime * airControlMultiplier);
+                rb.linearVelocity = new Vector3(newHorizontalVelocity.x, rb.linearVelocity.y, newHorizontalVelocity.z);
             }
         }
     }
