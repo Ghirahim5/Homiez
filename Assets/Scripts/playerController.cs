@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
+
 public class playerController : MonoBehaviour
 {
     // Settings
@@ -39,6 +40,7 @@ public class playerController : MonoBehaviour
     [SerializeField] private PlayerInputHandler playerInputHandler;
     [SerializeField] private Transform playerSkin;
     [SerializeField] private CapsuleCollider capsuleCollider;
+    public animationStateController Animator;
 
 
     // Runs once at the start
@@ -119,14 +121,18 @@ public class playerController : MonoBehaviour
         {
             // Getting stuck on narrow gaps fix
             if (!isCrouched && !CanStandUp()) return;
+            
 
             // Reset any downward or upward velocity before jumping
             Vector3 velocity = rb.linearVelocity;
             velocity.y = 0f;
             rb.linearVelocity = velocity;
 
+            Animator.animator.SetTrigger("Jump");
+
             // Add an instant upward force to make the player jump
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            
         }
     }
 
@@ -148,6 +154,13 @@ public class playerController : MonoBehaviour
     {
         // Decide if we should crouch based on input or if there's no space to stand
         bool shouldCrouch = crouchTriggered || !CanStandUp();
+        if (shouldCrouch)
+        {
+            Animator.animator.SetBool("CrouchedState", true);
+        }
+        else 
+            Animator.animator.SetBool("CrouchedState", false);
+        
 
         // Smoothly adjust the player's collider size and position for crouching
         float targetHeight = shouldCrouch ? crouchHeight : standHeight;
@@ -167,35 +180,47 @@ public class playerController : MonoBehaviour
         float currentSpeed = speed;
 
         // Adjust speed if sprinting or crouching
-        if (sprintTriggered) currentSpeed *= sprintMultiplier;
+
+        if (sprintTriggered)
+        {
+            currentSpeed *= sprintMultiplier;
+            Animator.animator.SetBool("isRunning", true);
+        }
+        else Animator.animator.SetBool("isRunning", false);
+
         if (isCrouched) currentSpeed *= crouchMultiplier;
 
         Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
         if (isGrounded())
         {
+            Animator.animator.SetBool("isFalling", false);
             // When on the ground, directly set horizontal velocity if there's input
             if (inputDirection.magnitude > 0f)
             {
                 Vector3 moveVelocity = moveDirection * currentSpeed;
                 rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
+                Animator.animator.SetBool("isWalking", true);
             }
             else
             {
                 // If no input, apply friction to slow down smoothly
                 Vector3 frictionVelocity = horizontalVelocity * Mathf.Max(0f, 1f - groundFriction * Time.fixedDeltaTime);
                 rb.linearVelocity = new Vector3(frictionVelocity.x, rb.linearVelocity.y, frictionVelocity.z);
+                Animator.animator.SetBool("isWalking", false);
             }
             // If no input, keep current momentum going
         }
         else
         {
+            Animator.animator.SetBool("isFalling", true);
             // In the air, apply input as acceleration instead of direct velocity changes
             if (inputDirection.magnitude > 0f)
             {
                 Vector3 moveVelocity = moveDirection * currentSpeed;
                 Vector3 velocityChange = moveVelocity - horizontalVelocity;
                 rb.AddForce(velocityChange * airControlMultiplier, ForceMode.Acceleration);
+                
             }
         }
     }
