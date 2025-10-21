@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-
 public class playerController : MonoBehaviour
 {
 
@@ -11,6 +10,8 @@ public class playerController : MonoBehaviour
     [SerializeField] private float speed = 2.0f;
     [SerializeField] private float sprintMultiplier = 1.5f;
     [SerializeField] private float crouchMultiplier = 0.5f;  
+    [SerializeField] private Transform PlayerHead;
+    [SerializeField] private float followSmoothness = 2f;
 
 
     [Header("Stair stepping settings")]
@@ -21,8 +22,6 @@ public class playerController : MonoBehaviour
     [Header("Crouch Settings")]
     [SerializeField] private float standHeight = 2.0f;
     [SerializeField] private float crouchHeight = 1.0f;
-    [SerializeField] private float standCameraHeight = 1.5f;
-    [SerializeField] private float crouchCameraHeight = 1.0f;
     [SerializeField] private bool isCrouched;
 
 
@@ -31,6 +30,8 @@ public class playerController : MonoBehaviour
     [SerializeField] private float airControlMultiplier = -0.5f;
     private bool jumpButtonHeldLastFrame = false;
     private float takeoffSpeed;
+    private float lastJumpTime = -Mathf.Infinity;       // tracks when the last jump happened
+
 
 
     [Header("Look Settings")]
@@ -45,6 +46,7 @@ public class playerController : MonoBehaviour
     [SerializeField] private PlayerInputHandler playerInputHandler;
     [SerializeField] private Transform playerSkin;
     [SerializeField] private CapsuleCollider capsuleCollider;
+
     public animationStateController Animator;
 
 
@@ -70,7 +72,33 @@ public class playerController : MonoBehaviour
     void Update()
     {
         HandleRotation();
+        AnimatorStateInfo stateInfo = Animator.animator.GetCurrentAnimatorStateInfo(0); // layer 0
+        if (stateInfo.IsName("Jump") && stateInfo.normalizedTime >= 1f)
+            {
+                Animator.animator.SetBool("Jump", false);
+            }
+        
     }
+
+    void LateUpdate()
+    {
+    if (mainCamera != null)
+    {
+        Vector3 cameraEuler = mainCamera.transform.eulerAngles;
+
+        // Match camera yaw to player body yaw
+        cameraEuler.y = transform.eulerAngles.y;
+
+            // Keep camera pitch and roll as they are
+            mainCamera.transform.eulerAngles = cameraEuler;
+            mainCamera.transform.position = Vector3.Lerp(
+            mainCamera.transform.position,
+            PlayerHead.position,
+            Time.deltaTime * followSmoothness
+        );
+    }
+    }
+
 
     // Physics updates happen here (fixed update time = every 0.02 seconds)
     void FixedUpdate()
@@ -80,7 +108,7 @@ public class playerController : MonoBehaviour
 
         // Call movement in FixedUpdate (FPS independance)
         HandleMovement(
-        horizontalVelocity,    
+        horizontalVelocity,
         playerInputHandler.MovementInput,
         playerInputHandler.SprintTriggered,
         playerInputHandler.CrouchTriggered);
@@ -88,12 +116,8 @@ public class playerController : MonoBehaviour
         HandleCrouching(playerInputHandler.CrouchTriggered);
         StairStep();
 
-        // Smoothly move the camera up or down based on whether the player is crouching
-        float targetCameraHeight = isCrouched ? crouchCameraHeight : standCameraHeight;
-        Vector3 cameraPos = mainCamera.transform.localPosition;
-        cameraPos.y = Mathf.Lerp(cameraPos.y, targetCameraHeight, Time.fixedDeltaTime * 10f);
-        mainCamera.transform.localPosition = cameraPos;
     }
+    
 
     // Debugging "wireframes" to help see the various "hitboxes"
     private void OnDrawGizmos()
@@ -124,32 +148,36 @@ public class playerController : MonoBehaviour
         Vector3 spherePosition = transform.position + Vector3.down * groundOffset;
         int groundLayer = LayerMask.GetMask("Ground");
 
+
         return Physics.CheckSphere(spherePosition, sphereRadius, groundLayer);
     }
 
-    private void HandleJumping(bool jumpTriggered)
+private void HandleJumping(bool jumpTriggered)
+{
+        Animator.animator.SetBool("Jump", true);
+
+    if (jumpTriggered && !jumpButtonHeldLastFrame && isGrounded())
     {
-        if (jumpTriggered && !jumpButtonHeldLastFrame && isGrounded())
-        {
-            if (!isCrouched && !CanStandUp()) return;
-            
+        if (!isCrouched && !CanStandUp()) return;
 
-            Vector3 velocity = rb.linearVelocity;
-            velocity.y = 0f;
-            rb.linearVelocity = velocity;
+        // Reset vertical velocity before jump
+        Vector3 velocity = rb.linearVelocity;
+        velocity.y = 0f;
+        rb.linearVelocity = velocity;
 
-            Animator.animator.SetTrigger("Jump");
+        // Capture horizontal speed at takeoff
+        Vector3 horizontalVelocityBeforeJump = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        takeoffSpeed = horizontalVelocityBeforeJump.magnitude;
 
-            // Add an instant upward force to make the player jump
-            // Capture the horizontal speed at the moment of takeoff for use in air
-            Vector3 horizontalVelocityBeforeJump = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-            takeoffSpeed = horizontalVelocityBeforeJump.magnitude;
-
+            // Apply jump force
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            
-        }
-        jumpButtonHeldLastFrame = jumpTriggered;
+
+        // Update last jump time
+        lastJumpTime = Time.time;
     }
+    jumpButtonHeldLastFrame = jumpTriggered;
+}
+
 
     private void BoostStep()
     {
@@ -208,6 +236,12 @@ public class playerController : MonoBehaviour
         Vector3 top = transform.position + Vector3.up * (standHeight - radius);
         int obstacleLayer = LayerMask.GetMask("Ground");
 
+        Animator.animator.SetBool("CanStand", true);
+        if (Physics.CheckCapsule(bottom, top, radius, obstacleLayer))
+        {
+            Animator.animator.SetBool("CanStand", false);
+        }
+
         // Returns true if no obstacles are blocking the space above the player
         return !Physics.CheckCapsule(bottom, top, radius, obstacleLayer);
     }
@@ -215,17 +249,8 @@ public class playerController : MonoBehaviour
 
     private void HandleCrouching(bool crouchTriggered)
     {
-        // Decide if we should crouch based on input or if there's no space to stand
-        bool shouldCrouch = crouchTriggered || !CanStandUp();
-        if (shouldCrouch)
-        {
-            Animator.animator.SetBool("CrouchedState", true);
-        }
-        else 
-            Animator.animator.SetBool("CrouchedState", false);
-        
         // Prevent crouching midair: only allow if grounded
-        shouldCrouch = (crouchTriggered && isGrounded()) || !CanStandUp();
+        bool shouldCrouch = (crouchTriggered && isGrounded()) || !CanStandUp();
 
         // Smoothly adjust the player's collider size and position for crouching
         float targetHeight = shouldCrouch ? crouchHeight : standHeight;
@@ -235,6 +260,11 @@ public class playerController : MonoBehaviour
         capsuleCollider.center = targetCenter;
 
         isCrouched = shouldCrouch;
+        Animator.animator.SetBool("CrouchedState", true);
+        if (!isCrouched)
+        {
+            Animator.animator.SetBool("CrouchedState", false);
+        }
     }
 
 
@@ -244,97 +274,77 @@ public class playerController : MonoBehaviour
         Vector3 moveDirection = playerSkin.TransformDirection(inputDirection);
         float currentSpeed = speed;
 
-        // Adjust speed if sprinting or crouching
-
-        if (sprintTriggered)
-        {
-            currentSpeed *= sprintMultiplier;
-            Animator.animator.SetBool("isRunning", true);
-        }
-        else Animator.animator.SetBool("isRunning", false);
-
         if (sprintTriggered) currentSpeed *= sprintMultiplier;
         if (isCrouched) currentSpeed *= crouchMultiplier;
 
         if (isGrounded())
         {
             Animator.animator.SetBool("isFalling", false);
-            // When on the ground, directly set horizontal velocity if there's input
             if (inputDirection.magnitude > 0f)
             {
-                Vector3 moveVelocity = moveDirection * currentSpeed;
-                rb.linearVelocity = new Vector3(moveVelocity.x, rb.linearVelocity.y, moveVelocity.z);
-                Animator.animator.SetBool("isWalking", true);
-            }
-            else
-            {
-                // If no input, apply friction to slow down smoothly
-                Vector3 frictionVelocity = horizontalVelocity * Mathf.Max(0f, 1f - groundFriction * Time.fixedDeltaTime);
-                rb.linearVelocity = new Vector3(frictionVelocity.x, rb.linearVelocity.y, frictionVelocity.z);
-                Animator.animator.SetBool("isWalking", false);
-                if (inputDirection.magnitude > 0f)
+                Vector3 targetVelocity = moveDirection * currentSpeed;
+                
+                if (sprintTriggered)
                 {
-                    Vector3 targetVelocity = moveDirection * currentSpeed;
-
-                    if (sprintTriggered)
-                    {
-                        float sprintAcceleration = 3.3f;
-                        Vector3 newHorizontalVelocity = Vector3.Lerp(
-                            horizontalVelocity,
-                            targetVelocity,
-                            Time.fixedDeltaTime * sprintAcceleration
-                        );
-                        rb.linearVelocity = new Vector3(newHorizontalVelocity.x, rb.linearVelocity.y, newHorizontalVelocity.z);
-                    }
-                    else
-                    {
-                        rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
-                    }
+                    float sprintAcceleration = 3.3f;
+                    Vector3 newHorizontalVelocity = Vector3.Lerp(
+                        horizontalVelocity,
+                        targetVelocity,
+                        Time.fixedDeltaTime * sprintAcceleration
+                    );
+                    rb.linearVelocity = new Vector3(newHorizontalVelocity.x, rb.linearVelocity.y, newHorizontalVelocity.z);
+                    Animator.animator.SetBool("isRunning", true);
                 }
                 else
                 {
-                    // No input, stay in place on the ground
-                    rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+                    rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
+                    
+                    Animator.animator.SetBool("isWalking", true);
+
                 }
+            }
+            else
+            {
+                // No input, stay in place on the ground
+                rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+                Animator.animator.SetBool("isWalking", false);
+                Animator.animator.SetBool("isRunning", false);
             }
         }
         else
         {
+            // Air movement: always allow minimal air control
+            float baseAirSpeed = Mathf.Max(takeoffSpeed, 1f); // ensure some speed even if takeoffSpeed = 0
+            Vector3 targetAirVelocity = moveDirection * baseAirSpeed;
             Animator.animator.SetBool("isFalling", true);
-            // In the air, apply input as acceleration instead of direct velocity changes
-            if (inputDirection.magnitude > 0f)
+
+            // If no input, allow minimal control in the last horizontal direction
+            if (inputDirection.magnitude == 0f)
             {
-                Vector3 moveVelocity = moveDirection * currentSpeed;
-                Vector3 velocityChange = moveVelocity - horizontalVelocity;
-                rb.AddForce(velocityChange * airControlMultiplier, ForceMode.Acceleration);
-
-                // Air movement: always allow minimal air control
-                float baseAirSpeed = Mathf.Max(takeoffSpeed, 1f); // ensure some speed even if takeoffSpeed = 0
-                Vector3 targetAirVelocity = moveDirection * baseAirSpeed;
-
-                // If no input, allow minimal control in the last horizontal direction
-                if (inputDirection.magnitude == 0f)
-                {
-                    targetAirVelocity = horizontalVelocity * 0.05f; // tiny nudge
-                }
-
-                Vector3 newHorizontalVelocity = Vector3.Lerp(
-                    horizontalVelocity,
-                    targetAirVelocity,
-                    Time.fixedDeltaTime * Mathf.Abs(airControlMultiplier)
-                );
-
-                // Clamp to base air speed to avoid gaining too much speed
-                newHorizontalVelocity = Vector3.ClampMagnitude(newHorizontalVelocity, baseAirSpeed);
-
-                rb.linearVelocity = new Vector3(newHorizontalVelocity.x, rb.linearVelocity.y, newHorizontalVelocity.z);
+                targetAirVelocity = horizontalVelocity * 0.05f; // tiny nudge
             }
+
+            Vector3 newHorizontalVelocity = Vector3.Lerp(
+                horizontalVelocity,
+                targetAirVelocity,
+                Time.fixedDeltaTime * Mathf.Abs(airControlMultiplier)
+            );
+
+            // Clamp to base air speed to avoid gaining too much speed
+            newHorizontalVelocity = Vector3.ClampMagnitude(newHorizontalVelocity, baseAirSpeed);
+
+            rb.linearVelocity = new Vector3(newHorizontalVelocity.x, rb.linearVelocity.y, newHorizontalVelocity.z);
         }
     }
+    
     // Rotates the player horizontally based on input
     private void ApplyHorizontalRotation(float rotationAmount)
     {
         rb.MoveRotation(rb.rotation * Quaternion.Euler(0f, rotationAmount, 0f));
+    if (mainCamera != null)
+    {
+        mainCamera.transform.Rotate(Vector3.up, rotationAmount, Space.World);
+    }
     }
 
     // Rotates the camera vertically so the player can look up and down
