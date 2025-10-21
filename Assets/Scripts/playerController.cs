@@ -45,6 +45,7 @@ public class playerController : MonoBehaviour
     [SerializeField] private Camera mainCamera;
     [SerializeField] private PlayerInputHandler playerInputHandler;
     [SerializeField] private Transform playerSkin;
+    [SerializeField] private Transform Center;
     [SerializeField] private CapsuleCollider capsuleCollider;
 
     public animationStateController Animator;
@@ -61,7 +62,11 @@ public class playerController : MonoBehaviour
         // Set up the player's collider size and position
         capsuleCollider = GetComponent<CapsuleCollider>();
         capsuleCollider.height = standHeight;
-        capsuleCollider.center = Vector3.zero;
+
+        if (capsuleCollider != null)
+        {
+            capsuleCollider.center = Center.localPosition;
+        }
 
         // Lock the mouse cursor so it doesn't wander off and hide it from view
         Cursor.lockState = CursorLockMode.Locked;
@@ -72,14 +77,9 @@ public class playerController : MonoBehaviour
     void Update()
     {
         HandleRotation();
-        AnimatorStateInfo stateInfo = Animator.animator.GetCurrentAnimatorStateInfo(0); // layer 0
-        if (stateInfo.IsName("Jump") && stateInfo.normalizedTime >= 1f)
-            {
-                Animator.animator.SetBool("Jump", false);
-            }
-        
     }
 
+    // Called after update finishes
     void LateUpdate()
     {
     if (mainCamera != null)
@@ -117,7 +117,6 @@ public class playerController : MonoBehaviour
         StairStep();
 
     }
-    
 
     // Debugging "wireframes" to help see the various "hitboxes"
     private void OnDrawGizmos()
@@ -125,8 +124,8 @@ public class playerController : MonoBehaviour
         if (capsuleCollider == null) return;
 
         // Ground check sphere
-        Vector3 spherePosition = transform.position + Vector3.down * (capsuleCollider.height / 2f - 0.35f);
-        float sphereRadius = 0.4f;
+        Vector3 spherePosition = feetRayPos.transform.position + Vector3.up * -0.2f;
+        float sphereRadius = 0.2f;
         Gizmos.color = isGrounded() ? Color.green : Color.red;
         Gizmos.DrawWireSphere(spherePosition, sphereRadius);
 
@@ -143,41 +142,48 @@ public class playerController : MonoBehaviour
     // Checks if the player is standing on the ground by casting a small sphere below them
     private bool isGrounded()
     {
-        float sphereRadius = 0.4f;
-        float groundOffset = standHeight / 2f - 0.35f;
-        Vector3 spherePosition = transform.position + Vector3.down * groundOffset;
+        float sphereRadius = 0.2f;
+        Vector3 spherePosition = feetRayPos.transform.position + Vector3.up * -0.2f;
         int groundLayer = LayerMask.GetMask("Ground");
-
 
         return Physics.CheckSphere(spherePosition, sphereRadius, groundLayer);
     }
 
-private void HandleJumping(bool jumpTriggered)
-{
-        Animator.animator.SetBool("Jump", true);
-
-    if (jumpTriggered && !jumpButtonHeldLastFrame && isGrounded())
+    public void setJumpBoolTrue()
     {
-        if (!isCrouched && !CanStandUp()) return;
-
-        // Reset vertical velocity before jump
-        Vector3 velocity = rb.linearVelocity;
-        velocity.y = 0f;
-        rb.linearVelocity = velocity;
-
-        // Capture horizontal speed at takeoff
-        Vector3 horizontalVelocityBeforeJump = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        takeoffSpeed = horizontalVelocityBeforeJump.magnitude;
-
-            // Apply jump force
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-
-        // Update last jump time
-        lastJumpTime = Time.time;
+        Animator.animator.SetBool("isJumpingUP", true);
     }
-    jumpButtonHeldLastFrame = jumpTriggered;
-}
 
+    public void setJumpBoolFalse()
+    {
+        Animator.animator.SetBool("isJumpingUP", false);
+    }
+
+    private void HandleJumping(bool jumpTriggered)
+    {
+        if (jumpTriggered && !jumpButtonHeldLastFrame && isGrounded())
+        {
+            if (!isCrouched && !CanStandUp()) return;
+            
+            // Reset vertical velocity before jump
+            Vector3 velocity = rb.linearVelocity;
+            velocity.y = 0f;
+            rb.linearVelocity = velocity;
+
+            // Capture horizontal speed at takeoff
+            Vector3 horizontalVelocityBeforeJump = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+            takeoffSpeed = horizontalVelocityBeforeJump.magnitude;
+
+            Animator.animator.SetBool("Jump", true);
+
+                // Apply jump force
+                rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+
+            // Update last jump time
+            lastJumpTime = Time.time;
+        }
+        jumpButtonHeldLastFrame = jumpTriggered;
+    }
 
     private void BoostStep()
     {
@@ -200,7 +206,7 @@ private void HandleJumping(bool jumpTriggered)
         Vector2 movementInput = playerInputHandler.MovementInput;
         if (rb.linearVelocity.y < 0f || movementInput.magnitude == 0f) return;
 
-        float rayDistance = 0.8f;
+        float rayDistance = 1f;
         Vector3 origin = feetRayPos.transform.position;
         RaycastHit hit;
 
@@ -211,6 +217,7 @@ private void HandleJumping(bool jumpTriggered)
         // Cast ray only in the main movement direction
         if (Physics.Raycast(origin, mainDir, out hit, rayDistance) && hit.collider.CompareTag("Stairs"))
         {
+            Animator.animator.SetBool("isWalking", true);
             BoostStep();
             return;
         }
@@ -221,12 +228,12 @@ private void HandleJumping(bool jumpTriggered)
             Vector3 diagonalDir = playerSkin.TransformDirection(new Vector3(movementInput.x, 0f, movementInput.y).normalized);
             if (Physics.Raycast(origin, diagonalDir, out hit, rayDistance) && hit.collider.CompareTag("Stairs"))
             {
+                Animator.animator.SetBool("isWalking", true);
                 BoostStep();
                 return;
             }
         }
     }
-
 
     // Checks if there's enough headroom for the player to stand up safely
     private bool CanStandUp()
@@ -245,28 +252,25 @@ private void HandleJumping(bool jumpTriggered)
         // Returns true if no obstacles are blocking the space above the player
         return !Physics.CheckCapsule(bottom, top, radius, obstacleLayer);
     }
-
-
+    
     private void HandleCrouching(bool crouchTriggered)
     {
-        // Prevent crouching midair: only allow if grounded
-        bool shouldCrouch = (crouchTriggered && isGrounded()) || !CanStandUp();
+        bool shouldCrouch = crouchTriggered && isGrounded();
 
-        // Smoothly adjust the player's collider size and position for crouching
         float targetHeight = shouldCrouch ? crouchHeight : standHeight;
-        Vector3 targetCenter = shouldCrouch ? new Vector3(0, -0.5f, 0) : Vector3.zero;
+        float colliderLerpSpeed = 10f;
 
-        capsuleCollider.height = targetHeight;
-        capsuleCollider.center = targetCenter;
+        // Smoothly adjust collider height
+        float newHeight = Mathf.Lerp(capsuleCollider.height, targetHeight, Time.fixedDeltaTime * colliderLerpSpeed);
+        capsuleCollider.height = newHeight;
+
+        // Offset the center by a fixed distance when crouched
+        Vector3 targetCenter = shouldCrouch ? Center.localPosition - new Vector3(0, 0.5f, 0) : Center.localPosition;
+        capsuleCollider.center = Vector3.Lerp(capsuleCollider.center, targetCenter, Time.fixedDeltaTime * colliderLerpSpeed);
 
         isCrouched = shouldCrouch;
-        Animator.animator.SetBool("CrouchedState", true);
-        if (!isCrouched)
-        {
-            Animator.animator.SetBool("CrouchedState", false);
-        }
+        Animator.animator.SetBool("isCrouched", isCrouched);
     }
-
 
     private void HandleMovement(Vector3 horizontalVelocity, Vector2 movementInput, bool sprintTriggered, bool crouchTriggered)
     {
@@ -298,7 +302,6 @@ private void HandleJumping(bool jumpTriggered)
                 else
                 {
                     rb.linearVelocity = new Vector3(targetVelocity.x, rb.linearVelocity.y, targetVelocity.z);
-                    
                     Animator.animator.SetBool("isWalking", true);
 
                 }
@@ -313,10 +316,10 @@ private void HandleJumping(bool jumpTriggered)
         }
         else
         {
+            Animator.animator.SetBool("isFalling", true);
             // Air movement: always allow minimal air control
             float baseAirSpeed = Mathf.Max(takeoffSpeed, 1f); // ensure some speed even if takeoffSpeed = 0
             Vector3 targetAirVelocity = moveDirection * baseAirSpeed;
-            Animator.animator.SetBool("isFalling", true);
 
             // If no input, allow minimal control in the last horizontal direction
             if (inputDirection.magnitude == 0f)

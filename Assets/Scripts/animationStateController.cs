@@ -10,6 +10,7 @@ public class animationStateController : MonoBehaviour
         animator = GetComponent<Animator>();
         Debug.Log(animator);
     }
+    
 void Update()
 {
 
