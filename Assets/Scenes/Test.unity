@@ -176,7 +176,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 76811452}
-  m_Material: {fileID: 13400000, guid: 91b6fbef0e4a04ca08d470fff0c991bd, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -2692,9 +2692,9 @@ GameObject:
   - component: {fileID: 381290998}
   - component: {fileID: 381290997}
   - component: {fileID: 381290996}
-  m_Layer: 3
+  m_Layer: 9
   m_Name: Ceiling_Test3
-  m_TagString: Untagged
+  m_TagString: Ceiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3137,7 +3137,7 @@ Camera:
   m_ShutterSpeed: 0.005
   m_Aperture: 16
   m_FocusDistance: 10
-  m_FocalLength: 20.78461
+  m_FocalLength: 12
   m_BladeCount: 5
   m_Curvature: {x: 2, y: 11}
   m_BarrelClipping: 0.25
@@ -3150,9 +3150,9 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.05
   far clip plane: 1000
-  field of view: 60.000004
+  field of view: 90
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -3500,19 +3500,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2e30df8a2d2d4bb2896a0046baf621a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::playerController
-  speed: 3
-  sprintMultiplier: 5
+  speed: 4
+  sprintMultiplier: 2
   crouchMultiplier: 0.5
   PlayerHead: {fileID: 9913821}
-  followSmoothness: 2
+  followSmoothness: 30
   feetRayPos: {fileID: 1670333465}
   stepBoost: 2.5
   standHeight: 7
   crouchHeight: 2.5
   isCrouched: 0
-  jumpForce: 5
+  jumpForce: 6
   airControlMultiplier: 0
-  mouseSensitivity: 0.5
+  mouseSensitivity: 0.7
   upDownLookRange: 90
   verticalRotation: 0
   rb: {fileID: 1101864535}
@@ -3529,7 +3529,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1101864530}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 672f591cac73f4629a3f9c7987863329, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -3557,9 +3557,9 @@ GameObject:
   - component: {fileID: 1124704516}
   - component: {fileID: 1124704515}
   - component: {fileID: 1124704514}
-  m_Layer: 3
+  m_Layer: 9
   m_Name: Ceiling_Test2
-  m_TagString: Untagged
+  m_TagString: Ceiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3713,8 +3713,8 @@ Transform:
   m_GameObject: {fileID: 1670333465}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -1.4, z: 0}
-  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1101864533}
@@ -3841,9 +3841,9 @@ GameObject:
   - component: {fileID: 1839817255}
   - component: {fileID: 1839817254}
   - component: {fileID: 1839817253}
-  m_Layer: 3
+  m_Layer: 9
   m_Name: Ceiling_Test1
-  m_TagString: Untagged
+  m_TagString: Ceiling
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3855,7 +3855,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1839817252}
-  m_Material: {fileID: 13400000, guid: 91b6fbef0e4a04ca08d470fff0c991bd, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
