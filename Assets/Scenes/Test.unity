@@ -144,7 +144,7 @@ Transform:
   m_GameObject: {fileID: 9913820}
   serializedVersion: 2
   m_LocalRotation: {x: 0.062263004, y: -0.019725306, z: -0.004567593, w: 0.9978544}
-  m_LocalPosition: {x: -0.0019853597, y: -0.92528987, z: -0.10927111}
+  m_LocalPosition: {x: -0.013, y: -0.424, z: 0.459}
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -176,7 +176,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 76811452}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 91b6fbef0e4a04ca08d470fff0c991bd, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -2585,6 +2585,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 629e05964dec9794e8eaa223cac9057e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1675374755}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 629e05964dec9794e8eaa223cac9057e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 437921435}
     - targetCorrespondingSourceObject: {fileID: 6039136598254185236, guid: 629e05964dec9794e8eaa223cac9057e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 9913821}
@@ -2918,6 +2921,37 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &437921434
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 437921435}
+  m_Layer: 0
+  m_Name: HeadTop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &437921435
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 437921434}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 5.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1101864533}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &683353248
 GameObject:
   m_ObjectHideFlags: 0
@@ -3500,32 +3534,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2e30df8a2d2d4bb2896a0046baf621a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::playerController
-  speed: 4
-  sprintMultiplier: 2
-  crouchMultiplier: 0.5
-  PlayerHead: {fileID: 9913821}
-  followSmoothness: 30
-  standHeight: 7
-  crouchHeight: 2.5
-  minCrouchInterval: 0.15
-  isCrouched: 0
-  slideDuration: 0.7
-  slideSpeed: 8
-  slideCrouchHeight: 0.8
-  jumpForce: 6
-  airControlMultiplier: 0
-  feetRayPos: {fileID: 1670333465}
-  stepBoost: 2.5
-  mouseSensitivity: 0.7
-  upDownLookRange: 90
-  verticalRotation: 0
-  rb: {fileID: 1101864535}
-  mainCamera: {fileID: 813898405}
-  playerInputHandler: {fileID: 1101864536}
-  playerSkin: {fileID: 1897529161}
+  Rb: {fileID: 1101864535}
+  MainCamera: {fileID: 813898405}
+  PlayerInputHandler: {fileID: 1101864536}
+  PlayerSkin: {fileID: 1897529161}
   Center: {fileID: 1675374755}
-  capsuleCollider: {fileID: 1101864538}
-  Animator: {fileID: 1101864531}
+  CapsuleCollider: {fileID: 1101864538}
+  Speed: 2
+  SprintMultiplier: 3
+  SprintAcceleration: 0.5
+  SprintDeceleration: 5
+  CrouchMultiplier: 0.5
+  JumpForce: 5
+  AirControlMultiplier: -0.5
+  TakeoffSpeed: 0
+  SlideDuration: 1
+  SlideSpeed: 5
+  SlideCrouchHeight: 0.8
+  IsSliding: 0
+  FeetRayPos: {fileID: 1670333465}
+  StepBoost: 1.5
+  MouseSensitivity: 2
+  UpDownLookRange: 90
+  VerticalRotation: 0
+  PlayerHead: {fileID: 9913821}
+  StandHeight: 7
+  CrouchHeight: 3
+  MinCrouchInterval: 3.5
+  IsCrouched: 0
+  PlayerHeadTop: {fileID: 437921435}
 --- !u!136 &1101864538
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -3672,7 +3709,7 @@ MeshCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1487265352}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 68292f000dbde48bfadbfa5b264b7377, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
