@@ -355,7 +355,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 629e05964dec9794e8eaa223cac9057e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.41
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 629e05964dec9794e8eaa223cac9057e, type: 3}
       propertyPath: m_LocalPosition.z
@@ -3080,7 +3080,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bb295bfe9ff8742d99aac3d84ce2987e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.49
+      value: -1.73
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bb295bfe9ff8742d99aac3d84ce2987e, type: 3}
       propertyPath: m_LocalPosition.z
@@ -3552,7 +3552,6 @@ MonoBehaviour:
   SlideSpeed: 5
   SlideCrouchHeight: 0.8
   IsSliding: 0
-  FeetRayPos: {fileID: 1670333465}
   StepBoost: 1.5
   MouseSensitivity: 2
   UpDownLookRange: 90
@@ -3560,7 +3559,7 @@ MonoBehaviour:
   PlayerHead: {fileID: 9913821}
   StandHeight: 7
   CrouchHeight: 3
-  MinCrouchInterval: 3.5
+  MinCrouchInterval: 0.1
   IsCrouched: 0
   PlayerHeadTop: {fileID: 437921435}
 --- !u!136 &1101864538
@@ -3734,7 +3733,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1670333466}
   m_Layer: 0
-  m_Name: FeetRay
+  m_Name: FeetPos
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3749,7 +3748,7 @@ Transform:
   m_GameObject: {fileID: 1670333465}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -1, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

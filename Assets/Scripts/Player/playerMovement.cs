@@ -16,32 +16,27 @@ public class PlayerMovement
 
     // Debugging "wireframes" to help see the various "hitboxes"
     public void DrawGizmos()
-    {
+    {        
         if (_pc.capsuleCollider == null) return;
-
-        // Ground check sphere
-        Vector3 spherePosition = _pc.feetRayPos.transform.position + Vector3.up * -0.2f;
-        float sphereRadius = 0.2f;
         Gizmos.color = _pc.movement.isGrounded() ? Color.green : Color.red;
-        Gizmos.DrawWireSphere(spherePosition, sphereRadius);
+        Gizmos.DrawWireSphere(_pc.feetRayPos, 0.3f);
 
         // Draw Feet Ray (Lower)
         if (_pc.feetRayPos != null)
         {
             Gizmos.color = Color.blue;
             Vector3 direction = _pc.transform.TransformDirection(Vector3.forward);
-            Gizmos.DrawSphere(_pc.feetRayPos.transform.position, 0.05f);
-            Gizmos.DrawLine(_pc.feetRayPos.transform.position, _pc.feetRayPos.transform.position + direction * 0.6f);
+            Gizmos.DrawLine(_pc.feetRayPos, _pc.feetRayPos + direction * 0.6f);
         }
     }
 
     // Checks if the player is standing on the ground by casting a small sphere below them
     public bool isGrounded()
     {
+        float sphereRadius = 0.3f;
 
-        float sphereRadius = 0.2f;
-        Vector3 spherePosition = _pc.feetRayPos.transform.position + Vector3.up * -0.2f;
         int groundLayer = LayerMask.GetMask("Ground");
+        Vector3 spherePosition = _pc.feetRayPos;
 
         _isGroundedState = Physics.CheckSphere(spherePosition, sphereRadius, groundLayer);
         return _isGroundedState;

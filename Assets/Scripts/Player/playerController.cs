@@ -20,6 +20,9 @@ public class playerController : MonoBehaviour
     public Transform playerSkin { get; private set; }
     public Transform center { get; private set; }
     public CapsuleCollider capsuleCollider { get; private set; }
+    public Vector3 feetRayPos => isCrouched 
+    ? Center.position - Vector3.up * 0.65f 
+    : Center.position - Vector3.up * 0.8f;
     #endregion
 
     #region Movement Settings
@@ -63,10 +66,8 @@ public class playerController : MonoBehaviour
 
     #region Stair Settings
     [Header("Stair stepping settings")]
-    [SerializeField] private GameObject FeetRayPos;
-    [SerializeField] private float StepBoost = 0.1f; 
-
-    public GameObject feetRayPos { get => FeetRayPos; private set => FeetRayPos = value; }
+    [SerializeField] private float StepBoost = 0.0f; 
+    
     public float stepBoost { get => StepBoost; private set => StepBoost = value; }
     #endregion
 
@@ -84,8 +85,8 @@ public class playerController : MonoBehaviour
 
     #region Crouch Settings
     [Header("Crouch Settings")]
-    [SerializeField] private float StandHeight = 2.0f;
-    [SerializeField] private float CrouchHeight = 1.0f;
+    [SerializeField] private float StandHeight = 7.0f;
+    [SerializeField] private float CrouchHeight = 3.5f;
     [SerializeField] private float MinCrouchInterval = 0.15f;
     [SerializeField] private bool IsCrouched;
     [SerializeField] Transform PlayerHeadTop;
@@ -114,7 +115,6 @@ public class playerController : MonoBehaviour
         rb = Rb ? Rb : GetComponent<Rigidbody>();
         capsuleCollider = CapsuleCollider ? CapsuleCollider : GetComponent<CapsuleCollider>();
         playerSkin = PlayerSkin ? PlayerSkin : transform;
-        center = Center ? Center : transform;
         mainCamera = MainCamera ? MainCamera : Camera.main;
         playerInputHandler = PlayerInputHandler ? PlayerInputHandler : GetComponent<PlayerInputHandler>();
 
@@ -152,6 +152,7 @@ public class playerController : MonoBehaviour
 
         if (mainCamera != null)
             mainCamera.transform.position = PlayerHead.position;
+
     }
 
     // Physics updates happen here (fixed update time = every 0.02 seconds)
