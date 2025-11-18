@@ -4,21 +4,23 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using System.Runtime.CompilerServices;
 using UnityEngine.AI;
+using Unity.Mathematics;
 
 public class EnemyAI : MonoBehaviour
 {
     #region Reference
     [Header("Reference")]
     
-    [SerializeField] private Rigidbody Rb;
+    //[SerializeField] private Rigidbody Rb;
     [SerializeField] private Transform EnemySkin;
     [SerializeField] private Transform Target;
     [SerializeField] private NavMeshAgent EnemyAgent;
     [SerializeField] private Animator Animator;
     [SerializeField] private Vector3 StandPos;
     [SerializeField] private Transform FeetPos;
+    [SerializeField] private float TimeToResetBones;
     
-    public Rigidbody rb { get; private set; }
+    //public Rigidbody rb { get; private set; }
     public Transform enemySkin { get; private set; }
     public Transform target { get => Target; private set => Target = value; }
     public NavMeshAgent enemyAgent { get; private set; }
@@ -30,12 +32,19 @@ public class EnemyAI : MonoBehaviour
 
     #region Collider settings
     [Header("Collider settings")]
-    [SerializeField] private CapsuleCollider CapsuleCollider;
+    //[SerializeField] private CapsuleCollider CapsuleCollider;
+    [SerializeField] private Transform RagdollRoot;
     [SerializeField] private float RecoveryTime = 1f;
     [SerializeField] private float PushForce = 1f;
-    public CapsuleCollider capsuleCollider { get; private set; }
+    [SerializeField] private float RequiredPushForce = 1f;
+    //public CapsuleCollider capsuleCollider { get; private set; }
+    public Transform ragdollRoot { get => RagdollRoot; private set => RagdollRoot = value; }
     public float recoveryTime { get => RecoveryTime; private set => RecoveryTime = value; }
     public float pushForce { get => PushForce; private set => PushForce = value; }
+    public float requiredPushForce { get => RequiredPushForce; private set => RequiredPushForce = value; }
+    public Rigidbody[] RagdollRigidbodies;
+    public CharacterJoint[] Joints;
+    public Rigidbody mainBone;
     #endregion
 
     #region Agent settings
@@ -54,47 +63,76 @@ public class EnemyAI : MonoBehaviour
     #endregion
 
     public PathFinding path { get; private set; }
-    public bool IsColliding;
+    public CollisionHandler collisionHandler {get; private set;}
+    public StateHandler stateHandler {get; private set;}
+    public bool StartRagdoll = false;
     public playerController currentPlayer;
+    public RagdollCollisionHandler relay;
+    public enum EnemyState
+    {
+        Chasing,
+        Ragdoll,
+        Attacking, 
+        StandUp,
+        ResetBones
+    }
+    private Transform hipsBone;
+    public EnemyState currentState = EnemyState.Chasing;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
+        collisionHandler = new CollisionHandler(this);
+        stateHandler = new StateHandler(this);
         enemyAgent = GetComponentInParent<NavMeshAgent>();
         animator = Animator;
-        rb = Rb ? Rb : GetComponent<Rigidbody>();
         enemySkin = EnemySkin ? EnemySkin : transform;
-        capsuleCollider = CapsuleCollider ? CapsuleCollider : GetComponent<CapsuleCollider>();
+        
+        RagdollRigidbodies = ragdollRoot.GetComponentsInChildren<Rigidbody>();
 
-        path = new PathFinding(this);
 
-        enemyAgent.radius = enemyStandHeightRadius;
-        enemyAgent.height = enemyStandHeight;
-        capsuleCollider.radius = enemyStandHeightRadius;
-        capsuleCollider.height = enemyStandHeight;
-        capsuleCollider.center = new Vector3(0f, enemyStandHeight / 2f, 0f);
-        IsColliding = false;
+        foreach (var rb in RagdollRigidbodies)
+        {
+            var handler = rb.gameObject.AddComponent<RagdollCollisionHandler>();
+            handler.Init(this);
+
+            rb.isKinematic = false;
+            rb.detectCollisions = true;
+        }
+            path = new PathFinding(this);
+
     }
     void FixedUpdate()
     {
-        //Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
-        if (!IsColliding)
+        switch (currentState)
         {
-
-            path.HandleMovement();
-
+            case EnemyState.Chasing:
+                {
+                    path.HandleMovement();
+                    break;
+                }
+            case EnemyState.Attacking:
+                {
+                    stateHandler.Attack();
+                    break;
+                }
+            case EnemyState.Ragdoll: 
+                {
+                    collisionHandler.HandleCollisionTimer();
+                    break;
+                }
+            case EnemyState.StandUp:
+                {
+                    stateHandler.StandUp();
+                    break;
+                }
         }
-        else path.HandleCollisionTimer();
     }
-    private void OnCollisionEnter(Collision collision)
+    public void OnRagdollHit(Collision collision, playerController player)
     {
-        //on contact with an object that has a player script
-        playerController player = collision.transform.GetComponent<playerController>();
-        if (player)
+        if (!StartRagdoll)
         {
-            IsColliding = true;
             currentPlayer = player;
-            path.CollisionHandler(player);
+            collisionHandler.Collision(player, collision);
         }
     }
 
