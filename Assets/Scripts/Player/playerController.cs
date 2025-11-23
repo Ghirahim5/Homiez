@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Serialization;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 public class playerController : MonoBehaviour
@@ -97,11 +100,22 @@ public class playerController : MonoBehaviour
     public bool isCrouched { get => IsCrouched; set => IsCrouched = value; }
     public Transform playerHeadTop { get => PlayerHeadTop; private set => PlayerHeadTop = value; }
     #endregion
-    
+
+    #region Health Settings
+    [Header("Health Settings")]
+    [SerializeField] private int CurrentHealth = 20;
+    [SerializeField] private int MaxHealth = 20;
+    [SerializeField] private Image[] Hearts;
+    public int currentHealth { get => CurrentHealth; set => CurrentHealth = value; }
+    public int maxHealth { get => MaxHealth; private set => MaxHealth = value; }
+    public Image[] hearts { get => Hearts; private set => Hearts = value; }
+
+    #endregion  
     // Animator
     public animationStateController Animator { get; private set; }
 
     // Subsystems
+    public PlayerHealth health { get; private set; }
     public PlayerMovement movement { get; private set; }
     public PlayerJump jump { get; private set; }
     public PlayerCrouch crouch { get; private set; }
@@ -133,7 +147,8 @@ public class playerController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-         // Initialize subsystems
+        // Initialize subsystems
+        health = new PlayerHealth(this);
         movement = new PlayerMovement(this);
         jump = new PlayerJump(this);
         crouch = new PlayerCrouch(this);
@@ -143,7 +158,10 @@ public class playerController : MonoBehaviour
     }
 
     // Runs once at the start
-    void Start(){}
+    void Start()
+    {
+        health.InitializeHearts();
+    }
 
     // Happens every frame
     void Update()
@@ -167,13 +185,14 @@ public class playerController : MonoBehaviour
         playerInputHandler.MovementInput,
         playerInputHandler.SprintTriggered,
         playerInputHandler.CrouchTriggered);
-        
-        // Additional movement "abilities"
+
+        // Additional "abilities"
         jump.HandleJumping(playerInputHandler.JumpTriggered, horizontalVelocity);
         crouch.HandleCrouching(playerInputHandler.CrouchTriggered);
         slide.HandleSlide(playerInputHandler.CrouchTriggered, 
         playerInputHandler.MovementInput, horizontalVelocity);
         stairStepSystem.StairStep();
+        health.HandleDamage();
     }
 
     // Draw the wireframes
