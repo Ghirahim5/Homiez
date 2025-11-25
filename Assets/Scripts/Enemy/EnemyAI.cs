@@ -5,134 +5,126 @@ using Unity.VisualScripting;
 using System.Runtime.CompilerServices;
 using UnityEngine.AI;
 using Unity.Mathematics;
+using NUnit.Framework;
+using JetBrains.Annotations;
 
 public class EnemyAI : MonoBehaviour
 {
     #region Reference
     [Header("Reference")]
     
-    //[SerializeField] private Rigidbody Rb;
     [SerializeField] private Transform EnemySkin;
     [SerializeField] private Transform Target;
     [SerializeField] private NavMeshAgent EnemyAgent;
     [SerializeField] private Animator Animator;
-    [SerializeField] private Vector3 StandPos;
-    [SerializeField] private Transform FeetPos;
-    [SerializeField] private float TimeToResetBones;
+
     
-    //public Rigidbody rb { get; private set; }
     public Transform enemySkin { get; private set; }
     public Transform target { get => Target; private set => Target = value; }
     public NavMeshAgent enemyAgent { get; private set; }
     public Animator animator { get; private set; }
-    public Vector3 standPos { get => StandPos; private set => StandPos = value; }
-    public Transform feetPos { get => FeetPos; private set => FeetPos = value; }
 
     #endregion
 
-    #region Collider settings
-    [Header("Collider settings")]
-    //[SerializeField] private CapsuleCollider CapsuleCollider;
+    #region Main Collider/Rigidbody settings
+    [Header("Main Collider/Rigidbody settings")]
+    [SerializeField] private CapsuleCollider MainCollider;
+    [SerializeField] private Rigidbody MainRigidbody;
+    [SerializeField] private Vector3 StandPos;
+    [SerializeField] private Transform FeetPos;
+    [SerializeField] private Transform CenterPos;
+    [SerializeField] private float StandHeight = 1f;
+    [SerializeField] private float EnemyStandHeightRadius = 1f;
+ 
+    public CapsuleCollider mainCollider { get; private set; }
+    public Rigidbody mainRigidbody { get; private set; }
+    public Vector3 standPos { get => StandPos; private set => StandPos = value; }
+    public Transform feetPos { get => FeetPos; private set => FeetPos = value; }
+    public Transform centerPos { get => CenterPos; private set => CenterPos = value; }
+    public float standHeight { get => StandHeight; private set => StandHeight = value; }
+    public float enemyStandHeightRadius { get => EnemyStandHeightRadius; private set => EnemyStandHeightRadius = value; }
+    #endregion
+
+    #region Ragdoll settings
+    [Header("Ragdoll settings")]
     [SerializeField] private Transform RagdollRoot;
+    [SerializeField] private Rigidbody MainBone;
     [SerializeField] private float RecoveryTime = 1f;
     [SerializeField] private float PushForce = 1f;
     [SerializeField] private float RequiredPushForce = 1f;
-    //public CapsuleCollider capsuleCollider { get; private set; }
+    public Rigidbody[] RagdollRigidbodies;
+    public Collider[] RagdollColliders;
+
     public Transform ragdollRoot { get => RagdollRoot; private set => RagdollRoot = value; }
+    public Rigidbody mainBone {get; private set;}
     public float recoveryTime { get => RecoveryTime; private set => RecoveryTime = value; }
     public float pushForce { get => PushForce; private set => PushForce = value; }
     public float requiredPushForce { get => RequiredPushForce; private set => RequiredPushForce = value; }
-    public Rigidbody[] RagdollRigidbodies;
-    public CharacterJoint[] Joints;
-    public Rigidbody mainBone;
-    #endregion
-
-    #region Agent settings
-    [SerializeField] private float EnemyStandHeight = 1f;
-    [SerializeField] private float EnemyStandHeightRadius = 1f;
-    public float enemyStandHeightRadius { get => EnemyStandHeightRadius; private set => EnemyStandHeightRadius = value; }
-    public float enemyStandHeight { get => EnemyStandHeight; private set => EnemyStandHeight = value; }
-
-    #endregion
-
-    #region Path Finding
-    [Header("Path Finding")]
-    [SerializeField] private float MovementSpeed = 1f;
-
-    public float movementSpeed { get => MovementSpeed; private set => MovementSpeed = value; }
-    #endregion
-
-    public PathFinding path { get; private set; }
-    public CollisionHandler collisionHandler {get; private set;}
-    public StateHandler stateHandler {get; private set;}
     public bool StartRagdoll = false;
-    public playerController currentPlayer;
-    public RagdollCollisionHandler relay;
-    public enum EnemyState
-    {
-        Chasing,
-        Ragdoll,
-        Attacking, 
-        StandUp,
-        ResetBones
-    }
-    private Transform hipsBone;
-    public EnemyState currentState = EnemyState.Chasing;
+    #endregion
 
+    #region AI logic
+    [Header("AI logic")]
+    public playerController currentPlayer;
+    [SerializeField] private float AttackRange = 1f;
+    
+    public float attackRange { get => AttackRange; private set => AttackRange = value; }
+    #endregion
+
+    #region Attack Settings
+    [Header("Attack settings")]
+    [SerializeField] private Collider AttackHitbox;
+    [SerializeField] private Rigidbody AttackRigidbody;
+    public Collider attackHitbox {get; private set;} 
+    public Rigidbody attackRigidbody {get; private set;}
+    #endregion
+
+    public CollisionHandler collisionHandler {get; private set;}
+    EnemyBaseState CurrentState;
+    EnemyStateFactory states;
+    public EnemyBaseState currentState { get { return CurrentState; } set { CurrentState = value; } }
+    public float collisionTimer = 0f;
     void Awake()
     {
-        collisionHandler = new CollisionHandler(this);
-        stateHandler = new StateHandler(this);
+        mainRigidbody = MainRigidbody ? MainRigidbody : GetComponent<Rigidbody>();
+        mainCollider = MainCollider ? MainCollider : GetComponent<CapsuleCollider>();
+
+        mainBone = MainBone ? MainBone : GetComponent<Rigidbody>();
+        RagdollRigidbodies = ragdollRoot.GetComponentsInChildren<Rigidbody>();
+        RagdollColliders = ragdollRoot.GetComponentsInChildren<Collider>();
+
+        attackHitbox = AttackHitbox ? AttackHitbox : GetComponent<Collider>();
+        attackRigidbody = AttackRigidbody ? AttackRigidbody : GetComponent<Rigidbody>();
+
         enemyAgent = GetComponentInParent<NavMeshAgent>();
         animator = Animator;
         enemySkin = EnemySkin ? EnemySkin : transform;
-        
-        RagdollRigidbodies = ragdollRoot.GetComponentsInChildren<Rigidbody>();
 
+        mainCollider.height = standHeight;
+        mainRigidbody.freezeRotation = true; 
+        mainRigidbody.interpolation = RigidbodyInterpolation.Interpolate;
 
-        foreach (var rb in RagdollRigidbodies)
+        if (mainCollider != null)
         {
-            var handler = rb.gameObject.AddComponent<RagdollCollisionHandler>();
-            handler.Init(this);
-
-            rb.isKinematic = false;
-            rb.detectCollisions = true;
+            mainCollider.center = new Vector3(0f, StandHeight/2, 0f);
         }
-            path = new PathFinding(this);
+
+        collisionHandler = new CollisionHandler(this);
+        states = new EnemyStateFactory(this);
+        currentState = states.Chase();
 
     }
     void FixedUpdate()
     {
-        switch (currentState)
-        {
-            case EnemyState.Chasing:
-                {
-                    path.HandleMovement();
-                    break;
-                }
-            case EnemyState.Attacking:
-                {
-                    stateHandler.Attack();
-                    break;
-                }
-            case EnemyState.Ragdoll: 
-                {
-                    collisionHandler.HandleCollisionTimer();
-                    break;
-                }
-            case EnemyState.StandUp:
-                {
-                    stateHandler.StandUp();
-                    break;
-                }
-        }
+        currentState.UpdateState();
     }
-    public void OnRagdollHit(Collision collision, playerController player)
+    private void OnCollisionEnter(Collision collision)
     {
-        if (!StartRagdoll)
+        var player = collision.transform.GetComponent<playerController>();
+        if (player != null)
         {
             currentPlayer = player;
-            collisionHandler.Collision(player, collision);
+            collisionHandler.Collision(currentPlayer);
         }
     }
 

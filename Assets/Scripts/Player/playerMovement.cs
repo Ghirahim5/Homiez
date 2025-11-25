@@ -6,6 +6,7 @@ public class PlayerMovement
     private bool _isGroundedState = false;
     private float _sprintHoldTime = 0f;
     private float _sprintHoldThreshold = 0.2f;
+    public bool isSprinting;
 
     private playerController _pc;
     
@@ -35,7 +36,7 @@ public class PlayerMovement
     {
         float sphereRadius = 0.3f;
 
-        int groundLayer = LayerMask.GetMask("Ground");
+        int groundLayer = LayerMask.GetMask("Ground", "Stairs");
         Vector3 spherePosition = _pc.feetRayPos;
 
         _isGroundedState = Physics.CheckSphere(spherePosition, sphereRadius, groundLayer);
@@ -71,7 +72,7 @@ public class PlayerMovement
         }
 
         bool canSprint = _sprintHoldTime >= _sprintHoldThreshold;
-        bool isSprinting = canSprint && !_pc.isCrouched && inputDirection.magnitude > 0.05f;
+        isSprinting = canSprint && !_pc.isCrouched && inputDirection.magnitude > 0.05f;
 
         if (isGrounded())
         {
