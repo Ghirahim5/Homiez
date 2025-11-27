@@ -1,11 +1,16 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class EnemyAttackState : EnemyBaseState
 {
     public EnemyAttackState(EnemyAI enemyAI, EnemyStateFactory enemyStateFactory) : base(enemyAI, enemyStateFactory)
     {
     }
-    public override void EnterState(){}
+    public override void EnterState()
+    {
+        _ec.mainRigidbody.isKinematic = true;
+        _ec.animator.SetBool("attack", true);
+    }
     public override void UpdateState()
     {
         Attack();
@@ -33,19 +38,17 @@ public class EnemyAttackState : EnemyBaseState
     public override void InitializeSubState(){}
     public void Attack()
     {
-        _ec.mainRigidbody.isKinematic = true;
-        EnableAttackHitbox();
-        if (_ec.animator.GetCurrentAnimatorStateInfo(0).IsName("attack") &&
-        _ec.animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f)
-        {                
-            _ec.animator.Play("attack", 0, 0f);
+        float animationTime = _ec.animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+        if (animationTime > 0.1f && animationTime < 0.5f)
+        {
+            EnableAttackHitbox();
         }
         else
         {
-            Quaternion lookRotation = Quaternion.LookRotation((_ec.target.position - _ec.transform.position).normalized);
-            _ec.transform.rotation = Quaternion.Euler(0, lookRotation.eulerAngles.y, 0);
-            _ec.animator.SetBool("attack", true);
+            DisableAttackHitbox();
         }
+        Quaternion lookRotation = Quaternion.LookRotation((_ec.target.position - _ec.transform.position).normalized);
+        _ec.transform.rotation = Quaternion.Euler(0, lookRotation.eulerAngles.y, 0);
     }
     private void EnableAttackHitbox()
     {

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.Serialization;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -192,7 +193,7 @@ public class playerController : MonoBehaviour
         slide.HandleSlide(playerInputHandler.CrouchTriggered, 
         playerInputHandler.MovementInput, horizontalVelocity);
         stairStepSystem.StairStep();
-        health.HandleDamage();
+        health.UpdateCurrentHealth();
     }
 
     // Draw the wireframes
@@ -200,5 +201,13 @@ public class playerController : MonoBehaviour
     {
         if (movement != null)
             movement.DrawGizmos();
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        var dmgcollider = collision.transform.GetComponent<DamageCollider>();
+        if (dmgcollider != null)
+        {
+            health.HandleDamage(dmgcollider);
+        }
     }
 }

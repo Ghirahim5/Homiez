@@ -75,8 +75,10 @@ public class EnemyAI : MonoBehaviour
     [Header("Attack settings")]
     [SerializeField] private Collider AttackHitbox;
     [SerializeField] private Rigidbody AttackRigidbody;
+    [SerializeField] private float AttackDamage = 1f;
     public Collider attackHitbox {get; private set;} 
     public Rigidbody attackRigidbody {get; private set;}
+    public float attackDamage { get => AttackDamage; private set => AttackDamage = value; }
     #endregion
 
     public CollisionHandler collisionHandler {get; private set;}
@@ -114,7 +116,11 @@ public class EnemyAI : MonoBehaviour
         currentState = states.Chase();
 
     }
-    void FixedUpdate()
+    void Update()
+    {
+        currentState.UpdateState();
+    }
+       void FixedUpdate()
     {
         currentState.UpdateState();
     }

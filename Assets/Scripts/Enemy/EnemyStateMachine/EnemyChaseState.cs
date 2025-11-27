@@ -5,7 +5,8 @@ public class EnemyChaseState : EnemyBaseState
     public EnemyChaseState(EnemyAI enemyAI, EnemyStateFactory enemyStateFactory) : base(enemyAI, enemyStateFactory){}
     public override void EnterState()
     {
-        _ec.enemyAgent.enabled = true;
+        //_ec.enemyAgent.enabled = true;
+        _ec.enemyAgent.isStopped = false;
         _ec.animator.SetBool("Chasing", true);
     }
     public override void UpdateState()
@@ -15,7 +16,8 @@ public class EnemyChaseState : EnemyBaseState
     }
     public override void ExitState()
     {
-        _ec.enemyAgent.enabled = false;
+        //_ec.enemyAgent.enabled = false;
+        _ec.enemyAgent.isStopped = true;
         _ec.animator.SetBool("Chasing", false);
     }
     public override void CheckSwitchStates()
