@@ -14,13 +14,11 @@ public class EnemyAI : MonoBehaviour
     [Header("Reference")]
     
     [SerializeField] private Transform EnemySkin;
-    [SerializeField] private Transform Target;
     [SerializeField] private NavMeshAgent EnemyAgent;
     [SerializeField] private Animator Animator;
 
     
     public Transform enemySkin { get; private set; }
-    public Transform target { get => Target; private set => Target = value; }
     public NavMeshAgent enemyAgent { get; private set; }
     public Animator animator { get; private set; }
 
@@ -45,6 +43,30 @@ public class EnemyAI : MonoBehaviour
     public float enemyStandHeightRadius { get => EnemyStandHeightRadius; private set => EnemyStandHeightRadius = value; }
     #endregion
 
+
+    #region AI logic
+    [Header("AI logic")]
+    [SerializeField] private GameObject Target;
+    [SerializeField] private float AttackRange = 1f;
+    [SerializeField] private float ChaseSpeed = 1f;
+
+    public playerController currentPlayer;
+    public GameObject target { get => Target; private set => Target = value; }
+    public float attackRange { get => AttackRange; private set => AttackRange = value; }
+    public float chaseSpeed { get => ChaseSpeed; private set => ChaseSpeed = value; }
+    #endregion
+
+    #region Attack Settings
+    [Header("Attack settings")]
+    [SerializeField] private Collider AttackHitbox;
+    [SerializeField] private Rigidbody AttackRigidbody;
+    [SerializeField] private float AttackDamage = 1f;
+    public Collider attackHitbox {get; private set;} 
+    public Rigidbody attackRigidbody {get; private set;}
+    public float attackDamage { get => AttackDamage; private set => AttackDamage = value; }
+    #endregion
+
+    public CollisionHandler collisionHandler {get; private set;}
     #region Ragdoll settings
     [Header("Ragdoll settings")]
     [SerializeField] private Transform RagdollRoot;
@@ -61,31 +83,12 @@ public class EnemyAI : MonoBehaviour
     public float pushForce { get => PushForce; private set => PushForce = value; }
     public float requiredPushForce { get => RequiredPushForce; private set => RequiredPushForce = value; }
     public bool StartRagdoll = false;
+    public float collisionTimer = 0f;
     #endregion
 
-    #region AI logic
-    [Header("AI logic")]
-    public playerController currentPlayer;
-    [SerializeField] private float AttackRange = 1f;
-    
-    public float attackRange { get => AttackRange; private set => AttackRange = value; }
-    #endregion
-
-    #region Attack Settings
-    [Header("Attack settings")]
-    [SerializeField] private Collider AttackHitbox;
-    [SerializeField] private Rigidbody AttackRigidbody;
-    [SerializeField] private float AttackDamage = 1f;
-    public Collider attackHitbox {get; private set;} 
-    public Rigidbody attackRigidbody {get; private set;}
-    public float attackDamage { get => AttackDamage; private set => AttackDamage = value; }
-    #endregion
-
-    public CollisionHandler collisionHandler {get; private set;}
     EnemyBaseState CurrentState;
     EnemyStateFactory states;
     public EnemyBaseState currentState { get { return CurrentState; } set { CurrentState = value; } }
-    public float collisionTimer = 0f;
     void Awake()
     {
         mainRigidbody = MainRigidbody ? MainRigidbody : GetComponent<Rigidbody>();
@@ -97,7 +100,8 @@ public class EnemyAI : MonoBehaviour
 
         attackHitbox = AttackHitbox ? AttackHitbox : GetComponent<Collider>();
         attackRigidbody = AttackRigidbody ? AttackRigidbody : GetComponent<Rigidbody>();
-
+        
+        target = Target ? Target : GetComponent<GameObject>();
         enemyAgent = GetComponentInParent<NavMeshAgent>();
         animator = Animator;
         enemySkin = EnemySkin ? EnemySkin : transform;

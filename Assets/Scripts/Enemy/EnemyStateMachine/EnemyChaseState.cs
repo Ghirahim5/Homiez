@@ -22,7 +22,7 @@ public class EnemyChaseState : EnemyBaseState
     }
     public override void CheckSwitchStates()
     {
-        if (Vector3.Distance(_ec.target.position, _ec.transform.position) < _ec.attackRange)
+        if (_ec.enemyAgent.remainingDistance < _ec.attackRange)
         {
             SwitchState(_factory.Attack());
         }
@@ -34,6 +34,7 @@ public class EnemyChaseState : EnemyBaseState
     public override void InitializeSubState(){}
     public void ChaseTarget() 
     {
-        _ec.enemyAgent.SetDestination(_ec.target.position);
+        _ec.enemyAgent.speed = _ec.chaseSpeed;
+        _ec.enemyAgent.SetDestination(_ec.target.transform.position);
     }
 }

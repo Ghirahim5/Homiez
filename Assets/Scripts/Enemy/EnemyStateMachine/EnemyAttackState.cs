@@ -9,7 +9,6 @@ public class EnemyAttackState : EnemyBaseState
     public override void EnterState()
     {
         _ec.mainRigidbody.isKinematic = true;
-        _ec.animator.SetBool("attack", true);
     }
     public override void UpdateState()
     {
@@ -20,11 +19,10 @@ public class EnemyAttackState : EnemyBaseState
     {
         _ec.mainRigidbody.isKinematic = false;
         DisableAttackHitbox();
-        _ec.animator.SetBool("attack", false);
     }
     public override void CheckSwitchStates()
     {
-        if (Vector3.Distance(_ec.target.position, _ec.transform.position) > _ec.attackRange &&
+        if (Vector3.Distance(_ec.target.transform.position, _ec.transform.position) > _ec.attackRange &&
         _ec.animator.GetCurrentAnimatorStateInfo(0).IsName("attack") &&
         _ec.animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f)
         {
@@ -38,8 +36,9 @@ public class EnemyAttackState : EnemyBaseState
     public override void InitializeSubState(){}
     public void Attack()
     {
+        _ec.animator.Play("attack");
         float animationTime = _ec.animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
-        if (animationTime > 0.1f && animationTime < 0.5f)
+        if (animationTime > 0.1f && animationTime < 0.5f) 
         {
             EnableAttackHitbox();
         }
@@ -47,7 +46,12 @@ public class EnemyAttackState : EnemyBaseState
         {
             DisableAttackHitbox();
         }
-        Quaternion lookRotation = Quaternion.LookRotation((_ec.target.position - _ec.transform.position).normalized);
+        if (animationTime >= 1f)
+        {
+            _ec.animator.Play("attack", 0, 0f);
+        }
+        
+        Quaternion lookRotation = Quaternion.LookRotation((_ec.target.transform.position - _ec.transform.position).normalized);
         _ec.transform.rotation = Quaternion.Euler(0, lookRotation.eulerAngles.y, 0);
     }
     private void EnableAttackHitbox()

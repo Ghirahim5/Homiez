@@ -2851,6 +2851,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 218497742}
   m_CullTransparentMesh: 1
+--- !u!1 &259999206 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7534891497212662176, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+  m_PrefabInstance: {fileID: 1883405954}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &259999211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 259999206}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31d72cac3f5f82f48801c968616f6fe2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DamageCollider
+  damage: 0
 --- !u!1 &314884353
 GameObject:
   m_ObjectHideFlags: 0
@@ -5285,7 +5303,15 @@ PrefabInstance:
     - target: {fileID: 3393078756370076236, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
       propertyPath: Target
       value: 
-      objectReference: {fileID: 1101864533}
+      objectReference: {fileID: 1101864530}
+    - target: {fileID: 3393078756370076236, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: ChaseSpeed
+      value: 3.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3393078756370076236, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: AttackDamage
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 7479177284627993908, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
       propertyPath: m_LocalPosition.x
       value: 4.9116383
@@ -5326,6 +5352,38 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7534891497212662176, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_TagString
+      value: Untagged
+      objectReference: {fileID: 0}
+    - target: {fileID: 7830506113893197510, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_Speed
+      value: 3.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7830506113893197510, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_BaseOffset
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7830506113893197510, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_AutoBraking
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7830506113893197510, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_Acceleration
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7830506113893197510, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_AngularSpeed
+      value: 720
+      objectReference: {fileID: 0}
+    - target: {fileID: 7830506113893197510, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_WalkableMask
+      value: 4294967295
+      objectReference: {fileID: 0}
+    - target: {fileID: 7830506113893197510, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      propertyPath: m_StoppingDistance
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 9115268704903076313, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
       propertyPath: m_Name
       value: Enemy
@@ -5333,7 +5391,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7534891497212662176, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 259999211}
   m_SourcePrefab: {fileID: 100100000, guid: 86711739c03749a46bd39534c3522bc8, type: 3}
 --- !u!1 &1892199224
 GameObject:
@@ -5712,7 +5773,7 @@ MonoBehaviour:
   m_OverrideTileSize: 0
   m_TileSize: 256
   m_OverrideVoxelSize: 0
-  m_VoxelSize: 0.33333334
+  m_VoxelSize: 0.5
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: 4d9dd40674714f946b3c0f1c2a0ab879, type: 2}
   m_BuildHeightMesh: 0
