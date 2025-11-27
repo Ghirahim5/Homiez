@@ -120,10 +120,6 @@ public class EnemyAI : MonoBehaviour
         currentState = states.Chase();
 
     }
-    void Update()
-    {
-        currentState.UpdateState();
-    }
        void FixedUpdate()
     {
         currentState.UpdateState();

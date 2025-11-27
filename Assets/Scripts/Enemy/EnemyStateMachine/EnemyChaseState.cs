@@ -6,6 +6,7 @@ public class EnemyChaseState : EnemyBaseState
     public override void EnterState()
     {
         //_ec.enemyAgent.enabled = true;
+        _ec.mainRigidbody.isKinematic = true;
         _ec.enemyAgent.isStopped = false;
         _ec.animator.SetBool("Chasing", true);
     }
@@ -17,6 +18,7 @@ public class EnemyChaseState : EnemyBaseState
     public override void ExitState()
     {
         //_ec.enemyAgent.enabled = false;
+        _ec.mainRigidbody.isKinematic = false;
         _ec.enemyAgent.isStopped = true;
         _ec.animator.SetBool("Chasing", false);
     }
