@@ -18,4 +18,8 @@ public class EnemyStateFactory
     {
         return new EnemyRagdollState(_ec, this);
     }
+    public EnemyBaseState Crouch()
+    {
+        return new EnemyCrouchState(_ec, this);
+    }
 }

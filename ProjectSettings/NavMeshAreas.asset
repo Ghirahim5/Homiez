@@ -29,7 +29,7 @@ NavMeshProjectSettings:
     cost: 1
   - name: 
     cost: 1
-  - name: 
+  - name: Crouch
     cost: 1
   - name: 
     cost: 1
@@ -92,7 +92,7 @@ NavMeshProjectSettings:
   - serializedVersion: 3
     agentTypeID: -334000983
     agentRadius: 0.9
-    agentHeight: 7
+    agentHeight: 0.8
     agentSlope: 45
     agentClimb: 0.6
     ledgeDropHeight: 50

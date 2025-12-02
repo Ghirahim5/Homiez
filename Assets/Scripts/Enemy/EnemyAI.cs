@@ -16,7 +16,6 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private Transform EnemySkin;
     [SerializeField] private NavMeshAgent EnemyAgent;
     [SerializeField] private Animator Animator;
-
     
     public Transform enemySkin { get; private set; }
     public NavMeshAgent enemyAgent { get; private set; }
@@ -49,6 +48,7 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private GameObject Target;
     [SerializeField] private float AttackRange = 1f;
     [SerializeField] private float ChaseSpeed = 1f;
+    public int crouchAreaMask;
 
     public playerController currentPlayer;
     public GameObject target { get => Target; private set => Target = value; }
@@ -98,6 +98,17 @@ public class EnemyAI : MonoBehaviour
         RagdollRigidbodies = ragdollRoot.GetComponentsInChildren<Rigidbody>();
         RagdollColliders = ragdollRoot.GetComponentsInChildren<Collider>();
 
+        foreach (var rigidbody in RagdollRigidbodies)
+        {
+            rigidbody.isKinematic = true;
+            rigidbody.useGravity = false;
+        }
+        foreach (var col in RagdollColliders)
+        {
+            col.enabled = false;
+        }
+        StartRagdoll = false;
+
         attackHitbox = AttackHitbox ? AttackHitbox : GetComponent<Collider>();
         attackRigidbody = AttackRigidbody ? AttackRigidbody : GetComponent<Rigidbody>();
         
@@ -118,6 +129,7 @@ public class EnemyAI : MonoBehaviour
         collisionHandler = new CollisionHandler(this);
         states = new EnemyStateFactory(this);
         currentState = states.Chase();
+        crouchAreaMask = 1 << NavMesh.GetAreaFromName("Crouch");
 
     }
        void FixedUpdate()
@@ -133,5 +145,13 @@ public class EnemyAI : MonoBehaviour
             collisionHandler.Collision(currentPlayer);
         }
     }
-
+    public bool IsOnCrouchArea()
+    {
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(transform.position, out hit, 0.3f, NavMesh.AllAreas))
+        {
+            return (hit.mask & crouchAreaMask) != 0;
+        }
+        return false;
+    }
 }

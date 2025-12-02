@@ -25,6 +25,7 @@ public class EnemyRagdollState : EnemyBaseState
         _ec.animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 1f)
         {
             SwitchState(_factory.Chase());
+            if (_ec.IsOnCrouchArea()) SwitchState(_factory.Crouch());
         }
     }
     public override void InitializeSubState(){}
@@ -67,16 +68,16 @@ public class EnemyRagdollState : EnemyBaseState
             col.enabled = false;
         }
         _ec.StartRagdoll = false;
-        //_ec.mainCollider.enabled = true;
-        //_ec.mainRigidbody.isKinematic = false;
+        _ec.mainCollider.enabled = true;
+        _ec.mainRigidbody.isKinematic = false;
         _ec.animator.enabled = true;
         _ec.animator.Play("standbackup", 0, 0f);
     }
     private void EnableRagdoll()
     {
         _ec.animator.enabled = false;
-        //_ec.mainRigidbody.isKinematic = true;
-        //_ec.mainCollider.enabled = false;
+        _ec.mainRigidbody.isKinematic = true;
+        _ec.mainCollider.enabled = false;
 
         foreach (var rigidbody in _ec.RagdollRigidbodies)
         {

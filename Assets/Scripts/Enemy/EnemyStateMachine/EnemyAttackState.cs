@@ -32,6 +32,10 @@ public class EnemyAttackState : EnemyBaseState
         {
             SwitchState(_factory.Ragdoll());
         }
+        if (_ec.IsOnCrouchArea())
+        {
+            SwitchState(_factory.Crouch());
+        }
     }
     public override void InitializeSubState(){}
     public void Attack()
